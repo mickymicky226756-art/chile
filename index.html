@@ -894,21 +894,111 @@
             font-size: 0.72rem;
         }
 
+        /* ============================================
+           MOBILE-FIRST TWEAKS for #authModal
+           — runs on every screen, polish for phones
+           ============================================ */
+        /* Use the natural viewport (handles iOS keyboard zoom) */
+        #authModal { -webkit-text-size-adjust: 100%; }
+        /* Smooth scroll when a focused field is brought into view */
+        #authModal { scroll-behavior: smooth; scroll-padding-top: 24px; }
+        /* Hide the giant decorative avocado image on phones — it's noise */
+        @media (max-width: 900px) {
+            #authModal::before { display: none !important; }
+        }
+        /* The country-code "button" used to LOOK tappable but did nothing.
+           Remove the cursor + chevron so users don't think it's interactive. */
+        .country-select { cursor: default; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .country-select .country-chevron { display: none; }
+        /* Make tap targets ≥ 44px for thumb-friendly mobile use */
+        .field-icon.toggle-pw {
+            min-width: 44px; min-height: 44px;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin: -10px; /* visually larger tap area without moving the icon */
+        }
+        .remember-row input[type="checkbox"] {
+            width: 22px; height: 22px;
+        }
+        .register-link {
+            display: inline-block;
+            padding: 8px 6px;
+            margin: -8px -6px; /* keep visual layout, enlarge hit area */
+        }
+        /* Subtle transition when toggling between Login ↔ Signup */
+        .login-card { transition: opacity 0.25s ease, transform 0.25s ease; }
+        .login-card.is-switching { opacity: 0; transform: translateY(8px); }
+        /* Loading state on submit button (set via JS) */
+        .login-submit-btn[disabled],
+        .login-submit-btn.is-loading {
+            opacity: 0.75; cursor: not-allowed;
+            background: var(--primary-color) !important;
+        }
+        .login-submit-btn .btn-spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.4);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: btnSpin 0.7s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .login-submit-btn.is-loading .btn-spinner { display: inline-block; }
+        @keyframes btnSpin { to { transform: rotate(360deg); } }
+        /* Per-field error message (populated by JS) */
+        .field-error {
+            display: none;
+            color: #dc2626;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin: 4px 4px 0;
+            line-height: 1.3;
+        }
+        .login-field.has-error { border-color: #ef4444 !important; box-shadow: 0 0 0 4px rgba(239,68,68,0.10) !important; }
+        .login-field.has-error + .field-error { display: block; }
+        /* Subtle shake when a field error is set (mobile-friendly feedback) */
+        @keyframes fieldShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .login-field.has-error { animation: fieldShake 0.35s ease; }
+
         /* Responsive */
         @media (max-width: 900px) {
-            #authModal::before {
-                width: 420px; height: 420px;
-                top: -60px; right: -120px;
-                opacity: 0.55;
-            }
             #authModal::after {
                 background: linear-gradient(180deg, rgba(234,242,216,0.75) 0%, rgba(234,242,216,0.95) 60%);
             }
-            #authModal .modal-content { padding: 20px 22px !important; }
-            .login-body { flex-direction: column; gap: 26px; padding: 20px 0; }
-            .login-hero { text-align: center; max-width: 100%; }
-            .hero-title { font-size: 3.4rem; }
-            .login-card-wrap { width: 100%; max-width: 420px; }
+            #authModal .modal-content { padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)) !important; }
+            .login-body { flex-direction: column; gap: 14px; padding: 8px 0 16px; }
+            /* Hide the marketing hero entirely on phones — save the screen for the form */
+            .login-hero { display: none; }
+            .login-card-wrap { width: 100%; max-width: 480px; }
+            .login-card { padding: 24px 18px 22px; border-radius: 20px; }
+            .login-icon-circle { width: 52px; height: 52px; font-size: 1.1rem; margin-bottom: 14px; }
+            .login-card-title { font-size: 1.3rem; }
+            .login-card-subtitle { font-size: 0.85rem; margin-bottom: 20px; }
+            /* Fields: bigger padding, bigger font (prevents iOS auto-zoom) */
+            .login-field {
+                padding: 12px 14px;
+                margin-bottom: 12px;
+                border-radius: 14px;
+                gap: 10px;
+            }
+            .login-field input { font-size: 16px !important; }   /* ← critical: iOS won't zoom */
+            .country-code { font-size: 1rem; }
+            .country-flag { font-size: 1.45rem; }
+            /* Larger touch-friendly submit button */
+            .login-submit-btn { padding: 17px; font-size: 1rem; min-height: 54px; }
+            .register-divider-row { margin-top: 18px; font-size: 0.9rem; }
+        }
+
+        /* Very small phones (≤ 360px width) — e.g. iPhone SE 1st gen */
+        @media (max-width: 360px) {
+            #authModal .modal-content { padding: 10px 12px !important; }
+            .login-card { padding: 20px 14px 18px; border-radius: 18px; }
+            .login-card-title { font-size: 1.2rem; }
+            .login-field { padding: 11px 12px; }
         }
 
         /* --- Admin --- */
@@ -2080,27 +2170,30 @@
 
                 <div class="login-card-wrap">
                     <!-- LOGIN FORM -->
-                    <form id="loginForm" class="login-card" method="post" action="javascript:void(0);" onsubmit="login(); return false;" autocomplete="on">
+                    <form id="loginForm" class="login-card" method="post" action="javascript:void(0);" onsubmit="login(); return false;" autocomplete="on" novalidate>
                         <div class="login-icon-circle">
                             <i class="fa-solid fa-lock"></i>
                         </div>
                         <h2 class="login-card-title">Login to your account</h2>
                         <p class="login-card-subtitle">Enter your credentials to continue</p>
 
-                        <div class="login-field">
-                            <div class="country-select">
+                        <div class="login-field" data-field="loginPhone">
+                            <div class="country-select" aria-hidden="true">
                                 <span class="country-flag">🇪🇹</span>
                                 <span class="country-code">+251</span>
-                                <i class="fa-solid fa-chevron-down country-chevron"></i>
                             </div>
-                            <input type="tel" id="loginPhone" name="phone" placeholder="Phone Number" maxlength="9" autocomplete="username" inputmode="tel">
+                            <input type="tel" id="loginPhone" name="phone" placeholder="Phone Number" maxlength="9" autocomplete="username" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
                         </div>
+                        <div class="field-error" data-error-for="loginPhone"></div>
 
-                        <div class="login-field">
-                            <i class="fa-solid fa-lock field-icon"></i>
-                            <input type="password" id="loginPass" name="password" placeholder="Login Password" autocomplete="current-password">
-                            <i class="fa-solid fa-eye field-icon toggle-pw" onclick="togglePasswordVisibility('loginPass', this)"></i>
+                        <div class="login-field" data-field="loginPass">
+                            <i class="fa-solid fa-lock field-icon" aria-hidden="true"></i>
+                            <input type="password" id="loginPass" name="password" placeholder="Login Password" autocomplete="current-password" enterkeyhint="go" aria-label="Password">
+                            <button type="button" class="field-icon toggle-pw" aria-label="Show password" onclick="togglePasswordVisibility('loginPass', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
                         </div>
+                        <div class="field-error" data-error-for="loginPass"></div>
 
                         <div class="remember-row">
                             <label>
@@ -2109,7 +2202,10 @@
                             </label>
                         </div>
 
-                        <button type="submit" class="login-submit-btn">LOGIN</button>
+                        <button type="submit" class="login-submit-btn" id="loginSubmitBtn">
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                            <span class="btn-label">LOGIN</span>
+                        </button>
 
                         <div class="register-divider-row">
                             <span>Don't have an account?</span>
@@ -2125,33 +2221,43 @@
                         <h2 class="login-card-title">Create your account</h2>
                         <p class="login-card-subtitle">Start your avocado investment journey</p>
 
-                        <div class="login-field">
-                            <div class="country-select">
+                        <div class="login-field" data-field="regPhone">
+                            <div class="country-select" aria-hidden="true">
                                 <span class="country-flag">🇪🇹</span>
                                 <span class="country-code">+251</span>
-                                <i class="fa-solid fa-chevron-down country-chevron"></i>
                             </div>
-                            <input type="tel" id="regPhone" placeholder="Phone Number" maxlength="9" autocomplete="tel">
+                            <input type="tel" id="regPhone" placeholder="Phone Number" maxlength="9" autocomplete="tel" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
                         </div>
+                        <div class="field-error" data-error-for="regPhone"></div>
 
-                        <div class="login-field">
-                            <i class="fa-solid fa-lock field-icon"></i>
-                            <input type="password" id="regPass" placeholder="Create Password" autocomplete="new-password">
-                            <i class="fa-solid fa-eye field-icon toggle-pw" onclick="togglePasswordVisibility('regPass', this)"></i>
+                        <div class="login-field" data-field="regPass">
+                            <i class="fa-solid fa-lock field-icon" aria-hidden="true"></i>
+                            <input type="password" id="regPass" placeholder="Create Password (min 6 chars)" autocomplete="new-password" minlength="6" enterkeyhint="next" aria-label="Create password">
+                            <button type="button" class="field-icon toggle-pw" aria-label="Show password" onclick="togglePasswordVisibility('regPass', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
                         </div>
+                        <div class="field-error" data-error-for="regPass"></div>
 
-                        <div class="login-field">
-                            <i class="fa-solid fa-lock field-icon"></i>
-                            <input type="password" id="regPassConfirm" placeholder="Confirm Password" autocomplete="new-password">
-                            <i class="fa-solid fa-eye field-icon toggle-pw" onclick="togglePasswordVisibility('regPassConfirm', this)"></i>
+                        <div class="login-field" data-field="regPassConfirm">
+                            <i class="fa-solid fa-lock field-icon" aria-hidden="true"></i>
+                            <input type="password" id="regPassConfirm" placeholder="Confirm Password" autocomplete="new-password" minlength="6" enterkeyhint="done" aria-label="Confirm password">
+                            <button type="button" class="field-icon toggle-pw" aria-label="Show password" onclick="togglePasswordVisibility('regPassConfirm', this)">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
                         </div>
+                        <div class="field-error" data-error-for="regPassConfirm"></div>
 
-                        <div class="login-field">
-                            <i class="fa-solid fa-ticket field-icon"></i>
-                            <input type="text" id="regRef" placeholder="Invite Code (Optional)" autocomplete="off">
+                        <div class="login-field" data-field="regRef">
+                            <i class="fa-solid fa-ticket field-icon" aria-hidden="true"></i>
+                            <input type="text" id="regRef" placeholder="Invite Code (Optional)" autocomplete="off" inputmode="text" enterkeyhint="done" maxlength="20" aria-label="Invite code">
                         </div>
+                        <div class="field-error" data-error-for="regRef"></div>
 
-                        <button class="login-submit-btn" onclick="signup()" style="background: linear-gradient(135deg, #4a7c2c 0%, #1f3d0e 100%);">SIGN UP</button>
+                        <button type="button" class="login-submit-btn" id="signupSubmitBtn" onclick="signup()" style="background: linear-gradient(135deg, #4a7c2c 0%, #1f3d0e 100%);">
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                            <span class="btn-label">SIGN UP</span>
+                        </button>
 
                         <div class="register-divider-row">
                             <span>Already registered?</span>
@@ -3329,22 +3435,124 @@
         }
 
         function toggleAuth(mode) {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
             if(mode === 'signup') {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('signupForm').style.display = 'block';
-                document.getElementById('authTitle').innerText = "Create Account";
-                generateCaptcha();
-                // Re-apply the URL referral code (if any) every time the user
-                // toggles to Sign Up, so it survives a Login ↔ Signup switch.
-                if (typeof __applyUrlReferralCode === 'function') {
-                    try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
-                }
+                if (loginForm) loginForm.classList.add('is-switching');
+                setTimeout(() => {
+                    if (loginForm) loginForm.style.display = 'none';
+                    if (signupForm) {
+                        signupForm.style.display = 'block';
+                        signupForm.classList.add('is-switching');
+                    }
+                    document.getElementById('authTitle').innerText = "Create Account";
+                    generateCaptcha();
+                    // Re-apply the URL referral code (if any) every time the user
+                    // toggles to Sign Up, so it survives a Login ↔ Signup switch.
+                    if (typeof __applyUrlReferralCode === 'function') {
+                        try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
+                    }
+                    // Trigger transition
+                    requestAnimationFrame(() => {
+                        if (signupForm) signupForm.classList.remove('is-switching');
+                    });
+                }, 120);
             } else {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('signupForm').style.display = 'none';
-                document.getElementById('authTitle').innerText = "Welcome Back";
-                restoreRememberState();
+                if (signupForm) signupForm.classList.add('is-switching');
+                setTimeout(() => {
+                    if (signupForm) signupForm.style.display = 'none';
+                    if (loginForm) {
+                        loginForm.style.display = 'block';
+                        loginForm.classList.add('is-switching');
+                    }
+                    document.getElementById('authTitle').innerText = "Welcome Back";
+                    restoreRememberState();
+                    requestAnimationFrame(() => {
+                        if (loginForm) loginForm.classList.remove('is-switching');
+                    });
+                }, 120);
             }
+        }
+
+        // ============================================================
+        // MOBILE-FRIENDLY FORM HELPERS
+        // ============================================================
+
+        // Mark/unmark a field as having a validation error
+        function setFieldError(fieldId, message) {
+            const field = document.querySelector(`.login-field[data-field="${fieldId}"]`);
+            const errEl = document.querySelector(`.field-error[data-error-for="${fieldId}"]`);
+            if (field) {
+                if (message) {
+                    field.classList.add('has-error');
+                    // Restart the shake animation
+                    field.style.animation = 'none';
+                    // force reflow
+                    void field.offsetWidth;
+                    field.style.animation = '';
+                } else {
+                    field.classList.remove('has-error');
+                }
+            }
+            if (errEl) errEl.textContent = message || '';
+        }
+        function clearAllFieldErrors(formId) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            form.querySelectorAll('.login-field.has-error').forEach(el => el.classList.remove('has-error'));
+            form.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+        }
+
+        // Set the submit button into a loading state (prevents double-tap on mobile)
+        function setSubmitLoading(btn, loading) {
+            if (!btn) return;
+            if (loading) {
+                btn.classList.add('is-loading');
+                btn.disabled = true;
+                const label = btn.querySelector('.btn-label');
+                if (label) btn.dataset.originalLabel = label.textContent;
+            } else {
+                btn.classList.remove('is-loading');
+                btn.disabled = false;
+            }
+        }
+
+        // Wire up the mobile keyboard's "Next" button to jump to the next field
+        // (works automatically thanks to enterkeyhint, but this handles the
+        // press-Enter case too for desktop users).
+        function wireAuthEnterKey() {
+            try {
+                const fields = [
+                    { id: 'loginPhone',   next: 'loginPass' },
+                    { id: 'regPhone',     next: 'regPass' },
+                    { id: 'regPass',      next: 'regPassConfirm' },
+                    { id: 'regPassConfirm', next: null /* submit */ }
+                ];
+                fields.forEach(f => {
+                    const el = document.getElementById(f.id);
+                    if (!el) return;
+                    el.addEventListener('keydown', function(e) {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        if (f.next) {
+                            const nextEl = document.getElementById(f.next);
+                            if (nextEl) nextEl.focus();
+                        } else {
+                            // Last field in signup: trigger submit
+                            const signupBtn = document.getElementById('signupSubmitBtn');
+                            if (signupBtn && !signupBtn.disabled) signupBtn.click();
+                        }
+                    });
+                });
+                // Clear error on input (so red border goes away as user types)
+                ['loginPhone', 'loginPass', 'regPhone', 'regPass', 'regPassConfirm', 'regRef']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.addEventListener('input',  () => setFieldError(id, ''));
+                    el.addEventListener('focus',  () => setFieldError(id, ''));
+                });
+            } catch (e) { /* noop */ }
         }
 
         // Persist the "Remember me" checkbox so the user's choice sticks
@@ -3393,6 +3601,29 @@
             // FIX #2: Apply dynamic config UI immediately on load
             updateDynamicConfigUI();
 
+            // Wire up "Next" key behavior on the auth form (mobile keyboards)
+            if (typeof wireAuthEnterKey === 'function') {
+                try { wireAuthEnterKey(); } catch (e) { /* noop */ }
+            }
+
+            // When the on-screen keyboard opens on mobile, the focused field
+            // can end up hidden behind the keyboard. Scroll it into view.
+            try {
+                ['loginPhone','loginPass','regPhone','regPass','regPassConfirm','regRef']
+                .forEach(function(id){
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.addEventListener('focus', function() {
+                        // Wait one frame for the keyboard to start opening
+                        setTimeout(function(){
+                            try {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            } catch (e) { /* noop */ }
+                        }, 250);
+                    });
+                });
+            } catch (e) { /* noop */ }
+
             if (typeof __URL_REF_CODE !== 'undefined' && __URL_REF_CODE) {
                 // 1. Switch the auth card to Sign Up
                 if (typeof toggleAuth === 'function') {
@@ -3422,30 +3653,64 @@
         function togglePasswordVisibility(inputId, iconEl) {
             const input = document.getElementById(inputId);
             if (!input) return;
+            // The eye toggle may be either a <button> wrapper OR a bare <i>.
+            // Find the actual <i class="fa-eye..."> to swap classes on.
+            let icon = null;
+            if (iconEl) {
+                if (iconEl.tagName === 'BUTTON' || iconEl.classList.contains('toggle-pw')) {
+                    icon = iconEl.querySelector('i') || iconEl;
+                } else {
+                    icon = iconEl;
+                }
+            }
             if (input.type === 'password') {
                 input.type = 'text';
-                if (iconEl) { iconEl.classList.remove('fa-eye'); iconEl.classList.add('fa-eye-slash'); }
+                if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+                if (iconEl && (iconEl.tagName === 'BUTTON')) iconEl.setAttribute('aria-label', 'Hide password');
             } else {
                 input.type = 'password';
-                if (iconEl) { iconEl.classList.remove('fa-eye-slash'); iconEl.classList.add('fa-eye'); }
+                if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+                if (iconEl && (iconEl.tagName === 'BUTTON')) iconEl.setAttribute('aria-label', 'Show password');
             }
         }
 
         function login() {
             const rawPhone = document.getElementById('loginPhone').value;
             const pass = document.getElementById('loginPass').value;
-            if(!rawPhone || !pass) return showToast("Please fill all fields");
+            const loginBtn = document.getElementById('loginSubmitBtn');
+
+            // Per-field validation with inline error messages
+            clearAllFieldErrors('loginForm');
+            let hasErr = false;
+            if (!rawPhone) { setFieldError('loginPhone', 'Please enter your phone number'); hasErr = true; }
+            else if (!/^[79][0-9]{8}$/.test(rawPhone)) { setFieldError('loginPhone', 'Phone must be 9 digits starting with 7 or 9'); hasErr = true; }
+            if (!pass) { setFieldError('loginPass', 'Please enter your password'); hasErr = true; }
+            if (hasErr) {
+                if (typeof showToast === 'function') showToast('Please fix the highlighted fields');
+                return;
+            }
 
             if (rawPhone === '99' && pass === 'a999') {
                 initApp({name: "Admin", phone: "99", isAdmin: true}, "99");
-                return showToast("Admin Access Granted");
+                if (typeof showToast === 'function') showToast("Admin Access Granted");
+                return;
             }
 
+            setSubmitLoading(loginBtn, true);
             const phone = "251" + sanitizePhone(rawPhone);
             db.ref('users/' + phone).once('value', (snapshot) => {
+                setSubmitLoading(loginBtn, false);
                 const data = snapshot.val();
-                if (data && data.password === pass) initApp(data, phone);
-                else showToast("Invalid credentials");
+                if (data && data.password === pass) {
+                    initApp(data, phone);
+                } else {
+                    setFieldError('loginPhone', '');
+                    setFieldError('loginPass', 'Phone or password is incorrect');
+                    if (typeof showToast === 'function') showToast("Invalid credentials");
+                }
+            }).catch(err => {
+                setSubmitLoading(loginBtn, false);
+                if (typeof showToast === 'function') showToast("Network error. Please try again.");
             });
         }
 
@@ -3454,20 +3719,37 @@
             const pass = document.getElementById('regPass').value;
             const passConfirm = document.getElementById('regPassConfirm').value;
             const refCode = document.getElementById('regRef').value.trim().toUpperCase();
-            
-            if(!rawPhone || !pass || !passConfirm) return showToast("Fill all required fields");
-            if(pass !== passConfirm) return showToast("Passwords do not match!");
-            if (!/^[79][0-9]{8}$/.test(rawPhone)) return showToast("Phone must be 9 digits (start with 7 or 9).");
+            const signupBtn = document.getElementById('signupSubmitBtn');
+
+            // Per-field validation with inline error messages
+            clearAllFieldErrors('signupForm');
+            let hasErr = false;
+            if (!rawPhone) { setFieldError('regPhone', 'Please enter your phone number'); hasErr = true; }
+            else if (!/^[79][0-9]{8}$/.test(rawPhone)) { setFieldError('regPhone', 'Phone must be 9 digits starting with 7 or 9'); hasErr = true; }
+            if (!pass) { setFieldError('regPass', 'Please create a password'); hasErr = true; }
+            else if (pass.length < 6) { setFieldError('regPass', 'Password must be at least 6 characters'); hasErr = true; }
+            if (!passConfirm) { setFieldError('regPassConfirm', 'Please confirm your password'); hasErr = true; }
+            else if (pass && pass !== passConfirm) { setFieldError('regPassConfirm', 'Passwords do not match'); hasErr = true; }
+            if (hasErr) {
+                if (typeof showToast === 'function') showToast('Please fix the highlighted fields');
+                return;
+            }
 
             const phone = "251" + rawPhone;
+            setSubmitLoading(signupBtn, true);
             db.ref('users/' + phone).once('value', (snapshot) => {
-                if (snapshot.exists()) return showToast("Phone already registered");
-                
+                if (snapshot.exists()) {
+                    setSubmitLoading(signupBtn, false);
+                    setFieldError('regPhone', 'This phone number is already registered');
+                    if (typeof showToast === 'function') showToast("Phone already registered");
+                    return;
+                }
+
                 const autoName = "Grower_" + rawPhone.substring(5);
                 let newCode = "";
                 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                 for(let i=0; i<5; i++) newCode += chars.charAt(Math.floor(Math.random() * chars.length));
-                
+
                 const newUser = {
                     name: autoName, phone: phone, password: pass,
                     balance: appConfig.registrationBonus,
@@ -3478,9 +3760,16 @@
                     taskClaims: {}
                 };
                 db.ref('users/' + phone).set(newUser).then(() => {
+                    // Keep button in loading state — initApp() will hide the modal
                     initApp(newUser, phone);
-                    showToast(`Account created! ${appConfig.registrationBonus} ETB Bonus & 1 Spin Added.`);
+                    if (typeof showToast === 'function') showToast(`Account created! ${appConfig.registrationBonus} ETB Bonus & 1 Spin Added.`);
+                }).catch(err => {
+                    setSubmitLoading(signupBtn, false);
+                    if (typeof showToast === 'function') showToast("Could not create account. Please try again.");
                 });
+            }).catch(err => {
+                setSubmitLoading(signupBtn, false);
+                if (typeof showToast === 'function') showToast("Network error. Please try again.");
             });
         }
 
