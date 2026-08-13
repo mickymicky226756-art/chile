@@ -3371,7 +3371,7 @@
                 const autoName = "Grower_" + rawPhone.substring(5);
                 let newCode = "";
                 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                for(let i=0; i<25; i++) newCode += chars.charAt(Math.floor(Math.random() * chars.length));
+                for(let i=0; i<5; i++) newCode += chars.charAt(Math.floor(Math.random() * chars.length));
                 
                 const newUser = {
                     name: autoName, phone: phone, password: pass,
