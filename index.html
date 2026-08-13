@@ -655,8 +655,9 @@
         /* ===== LOGIN PAGE REDESIGN ===== */
         #authModal {
             background:
-                radial-gradient(ellipse at 100% 0%, rgba(255,255,255,0.55) 0%, transparent 55%),
-                linear-gradient(135deg, #eaf2d8 0%, #d8e8b8 50%, #c5d896 100%) !important;
+                radial-gradient(ellipse at 100% 0%, rgba(255,255,255,0.65) 0%, transparent 55%),
+                radial-gradient(ellipse at 0% 100%, rgba(255,255,255,0.35) 0%, transparent 50%),
+                linear-gradient(135deg, #eef5db 0%, #d8e8b8 50%, #c5d896 100%) !important;
             display: flex !important;
             align-items: stretch !important;
             justify-content: center !important;
@@ -675,16 +676,17 @@
             height: 720px;
             background: url('https://upload.wikimedia.org/wikipedia/commons/a/af/Liat_Portal_for_Foodie_Disorder_-_Avocado_Halves.jpg') no-repeat center/contain;
             z-index: 0;
-            opacity: 0.95;
+            opacity: 0.92;
             transform: rotate(-12deg);
             pointer-events: none;
+            filter: saturate(1.05) contrast(1.02);
         }
         /* Soft fade so the avocado blends with the green background */
         #authModal::after {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, rgba(234,242,216,0.96) 0%, rgba(234,242,216,0.78) 40%, rgba(234,242,216,0.20) 65%, rgba(234,242,216,0) 80%);
+            background: linear-gradient(95deg, rgba(238,245,219,0.96) 0%, rgba(238,245,219,0.82) 40%, rgba(238,245,219,0.30) 65%, rgba(238,245,219,0) 85%);
             z-index: 1;
             pointer-events: none;
         }
@@ -720,14 +722,22 @@
             border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1.7rem; line-height: 1;
-            box-shadow: 0 6px 16px rgba(31, 61, 14, 0.15);
+            box-shadow: 0 6px 16px rgba(31, 61, 14, 0.18);
+            transition: transform 0.3s ease;
         }
+        .login-brand:hover .login-brand-icon { transform: rotate(-8deg) scale(1.05); }
         .login-brand-text {
             display: flex; align-items: center; gap: 6px;
-            font-weight: 800; font-size: 1.45rem; letter-spacing: 1px; line-height: 1;
+            font-weight: 800; font-size: 1.45rem; letter-spacing: 1.2px; line-height: 1;
         }
         .brand-dark { color: #1f3d0e; }
-        .brand-light { color: #84cc16; }
+        .brand-light {
+            color: #4a7c2c;
+            background: linear-gradient(135deg, #84cc16 0%, #4a7c2c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
         /* Body: hero text + login card */
         .login-body {
@@ -741,76 +751,122 @@
         }
         .login-hero { flex: 1; min-width: 320px; max-width: 560px; z-index: 2; }
         .hero-welcome {
-            font-size: 1.4rem; color: #1f3d0e; font-weight: 500;
-            margin: 0 0 6px; line-height: 1.2;
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 1.05rem; color: #1f3d0e; font-weight: 600;
+            margin: 0 0 12px; line-height: 1.2;
+            background: rgba(255, 255, 255, 0.55);
+            padding: 6px 14px;
+            border-radius: 50px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(31, 61, 14, 0.08);
+        }
+        .hero-welcome::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: #84cc16;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(132, 204, 22, 0.25);
+            animation: heroPulse 2s ease-in-out infinite;
+        }
+        @keyframes heroPulse {
+            0%, 100% { box-shadow: 0 0 0 4px rgba(132, 204, 22, 0.25); }
+            50%      { box-shadow: 0 0 0 8px rgba(132, 204, 22, 0.05); }
         }
         .hero-title {
-            font-size: 5.2rem; font-weight: 800; line-height: 1;
-            margin: 0 0 24px; letter-spacing: -1.5px;
+            font-size: 4.6rem; font-weight: 800; line-height: 1;
+            margin: 0 0 20px; letter-spacing: -1.5px;
         }
         .hero-title .hero-dark {
             color: #1a2e0a; display: block; font-weight: 800;
         }
         .hero-title .hero-green {
-            color: #4a7c2c; font-style: italic;
+            background: linear-gradient(135deg, #84cc16 0%, #4a7c2c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             display: block; font-weight: 800; line-height: 0.95;
+            font-style: italic;
         }
         .hero-subtitle {
-            color: #4a5a3a; font-size: 1.02rem; font-weight: 500;
-            margin: 0; line-height: 1.4;
+            color: #4a5a3a; font-size: 1.05rem; font-weight: 500;
+            margin: 0; line-height: 1.5; max-width: 460px;
         }
 
         /* Card wrapper */
         .login-card-wrap {
             width: 440px; flex-shrink: 0;
             display: flex; flex-direction: column; align-items: center;
-            gap: 26px; z-index: 2;
+            gap: 22px; z-index: 2;
         }
         .login-card {
             background: #ffffff;
             border-radius: 24px;
             padding: 36px 32px 30px;
             width: 100%;
-            box-shadow: 0 25px 50px -12px rgba(31, 61, 14, 0.18);
+            box-shadow:
+                0 25px 50px -12px rgba(31, 61, 14, 0.20),
+                0 0 0 1px rgba(74, 124, 44, 0.06);
             box-sizing: border-box;
-            animation: loginCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: loginCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         @keyframes loginCardIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .login-icon-circle {
-            width: 56px; height: 56px;
-            background: #dcfce7;
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             margin: 0 auto 18px;
-            color: #4a7c2c; font-size: 1.2rem;
-            box-shadow: 0 4px 12px rgba(74, 124, 44, 0.18);
+            color: #4a7c2c; font-size: 1.3rem;
+            box-shadow:
+                0 8px 20px rgba(74, 124, 44, 0.20),
+                inset 0 -2px 4px rgba(74, 124, 44, 0.08);
+            position: relative;
+        }
+        .login-icon-circle::after {
+            content: '';
+            position: absolute;
+            top: 6px; left: 50%;
+            transform: translateX(-50%);
+            width: 18px; height: 6px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            filter: blur(3px);
         }
         .login-card-title {
-            text-align: center; font-size: 1.4rem; font-weight: 800;
+            text-align: center; font-size: 1.45rem; font-weight: 800;
             color: #1a2e0a; margin: 0 0 6px; line-height: 1.2;
+            letter-spacing: -0.3px;
         }
         .login-card-subtitle {
             text-align: center; color: #6b7a5c; font-size: 0.88rem;
-            margin: 0 0 24px; font-weight: 500;
+            margin: 0 0 26px; font-weight: 500; line-height: 1.4;
         }
 
         /* Fields */
         .login-field {
             display: flex; align-items: center;
             border: 1.5px solid #e5e7eb;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px 18px;
             margin-bottom: 14px;
             background: #ffffff;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             gap: 12px;
+            position: relative;
+        }
+        .login-field:hover {
+            border-color: #d1d5db;
+            background: #fafafa;
         }
         .login-field:focus-within {
             border-color: #4a7c2c;
-            box-shadow: 0 0 0 4px rgba(74, 124, 44, 0.08);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(74, 124, 44, 0.10);
+            transform: translateY(-1px);
         }
         .login-field input {
             border: none !important; outline: none !important;
@@ -827,14 +883,18 @@
             padding-right: 14px; border-right: 1.5px solid #e5e7eb;
             color: #1a2e0a; font-weight: 600;
             cursor: pointer; height: 22px;
+            transition: border-color 0.2s;
         }
+        .login-field:focus-within .country-select { border-right-color: #c5d896; }
         .country-flag { font-size: 1.35rem; line-height: 1; }
         .country-code { font-size: 0.95rem; font-weight: 600; color: #1a2e0a; }
         .country-chevron { color: #6b7a5c; font-size: 0.7rem; margin-left: 2px; }
 
-        .field-icon { color: #9ca3af; font-size: 1rem; flex-shrink: 0; }
-        .field-icon.toggle-pw { cursor: pointer; transition: color 0.2s; }
-        .field-icon.toggle-pw:hover { color: #4a7c2c; }
+        .field-icon { color: #9ca3af; font-size: 1rem; flex-shrink: 0; transition: color 0.2s; }
+        .login-field:focus-within .field-icon { color: #4a7c2c; }
+        .field-icon.toggle-pw { cursor: pointer; transition: color 0.2s, transform 0.2s; }
+        .field-icon.toggle-pw:hover { color: #4a7c2c; transform: scale(1.1); }
+        .field-icon.toggle-pw:active { transform: scale(0.92); }
 
         /* Remember me */
         .remember-row {
@@ -845,7 +905,9 @@
             display: flex; align-items: center; gap: 8px;
             color: #1a2e0a; font-size: 0.88rem; cursor: pointer;
             font-weight: 500; user-select: none;
+            transition: color 0.2s;
         }
+        .remember-row label:hover { color: #4a7c2c; }
         .remember-row input[type="checkbox"] {
             width: 18px; height: 18px;
             accent-color: #4a7c2c;
@@ -860,35 +922,66 @@
             font-size: 0.95rem; font-weight: 800; letter-spacing: 2.5px;
             cursor: pointer;
             box-shadow: 0 10px 25px rgba(74, 124, 44, 0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
         }
-        .login-submit-btn:hover { box-shadow: 0 12px 30px rgba(74, 124, 44, 0.45); }
+        .login-submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            transition: left 0.6s ease;
+        }
+        .login-submit-btn:hover::before { left: 100%; }
+        .login-submit-btn:hover {
+            box-shadow: 0 14px 32px rgba(74, 124, 44, 0.50);
+            transform: translateY(-2px);
+        }
         .login-submit-btn:active { transform: scale(0.98); }
 
         /* Register link with side dividers */
         .register-divider-row {
-            display: flex; align-items: center; gap: 10px;
-            margin-top: 22px; justify-content: center;
+            display: flex; align-items: center; gap: 12px;
+            margin-top: 24px; justify-content: center;
             color: #6b7a5c; font-size: 0.88rem; font-weight: 500;
         }
         .register-divider-row::before,
         .register-divider-row::after {
-            content: ''; width: 45px; height: 1px;
-            background: #d4d4d8; flex-shrink: 0;
+            content: ''; width: 50px; height: 1px;
+            background: linear-gradient(90deg, transparent, #d4d4d8, transparent);
+            flex-shrink: 0;
         }
         .register-link {
             color: #4a7c2c; font-weight: 800;
             text-decoration: none; cursor: pointer;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .register-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0;
+            width: 0; height: 2px;
+            background: linear-gradient(90deg, #84cc16, #4a7c2c);
+            transition: width 0.3s ease;
+            border-radius: 2px;
         }
         .register-link:hover { color: #1f3d0e; }
+        .register-link:hover::after { width: 100%; }
 
         /* Footer (Secure & Encrypted) */
         .login-footer {
             display: flex; align-items: center; gap: 8px;
             color: #4a5a3a; font-size: 0.85rem; font-weight: 500;
-            padding-top: 4px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 50px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(31, 61, 14, 0.08);
         }
         .login-footer-icon {
             color: #4a7c2c; background: #dcfce7;
@@ -1008,7 +1101,7 @@
                 max-width: 100% !important;
                 min-width: 0 !important;
             }
-            .hero-welcome { font-size: 1.1rem !important; margin-bottom: 2px !important; }
+            .hero-welcome { font-size: 0.95rem !important; margin-bottom: 10px !important; padding: 5px 12px !important; }
             .hero-title { font-size: 2.6rem !important; margin-bottom: 10px !important; }
             .hero-subtitle { font-size: 0.92rem !important; }
 
@@ -1060,6 +1153,7 @@
         @media (max-width: 360px) {
             #authModal::before { width: 240px !important; height: 240px !important; top: -60px !important; right: -80px !important; }
             #authModal .modal-content { padding: 10px 12px !important; }
+            .hero-welcome { font-size: 0.85rem !important; padding: 4px 10px !important; margin-bottom: 8px !important; }
             .hero-title { font-size: 2.1rem !important; }
             .login-card { padding: 22px 16px 20px !important; }
             .login-card-title { font-size: 1.2rem; }
@@ -2241,7 +2335,7 @@
                         <div class="login-icon-circle">
                             <i class="fa-solid fa-lock"></i>
                         </div>
-                        <h2 class="login-card-title">Login to your account</h2>
+                        <h2 id="authTitle" class="login-card-title">Welcome Back</h2>
                         <p class="login-card-subtitle">Enter your credentials to continue</p>
 
                         <div class="login-field" data-field="loginPhone">
@@ -2282,11 +2376,11 @@
                     </form>
 
                     <!-- SIGNUP FORM (hidden by default) -->
-                    <div id="signupForm" class="login-card" style="display:none;">
+                    <form id="signupForm" class="login-card" method="post" action="javascript:void(0);" onsubmit="signup(); return false;" autocomplete="on" novalidate style="display:none;">
                         <div class="login-icon-circle">
                             <i class="fa-solid fa-user-plus"></i>
                         </div>
-                        <h2 class="login-card-title">Create your account</h2>
+                        <h2 class="login-card-title">Create Account</h2>
                         <p class="login-card-subtitle">Start your avocado investment journey</p>
 
                         <div class="login-field" data-field="regPhone">
@@ -2295,13 +2389,13 @@
                                 <span class="country-code">+251</span>
                                 <i class="fa-solid fa-chevron-down country-chevron"></i>
                             </div>
-                            <input type="tel" id="regPhone" placeholder="Phone Number" maxlength="9" autocomplete="tel" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
+                            <input type="tel" id="regPhone" name="phone" placeholder="Phone Number" maxlength="9" autocomplete="tel" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
                         </div>
                         <div class="field-error" data-error-for="regPhone"></div>
 
                         <div class="login-field" data-field="regPass">
                             <i class="fa-solid fa-lock field-icon" aria-hidden="true"></i>
-                            <input type="password" id="regPass" placeholder="Create Password (min 6 chars)" autocomplete="new-password" minlength="6" enterkeyhint="next" aria-label="Create password">
+                            <input type="password" id="regPass" name="new-password" placeholder="Create Password (min 6 chars)" autocomplete="new-password" minlength="6" enterkeyhint="next" aria-label="Create password">
                             <button type="button" class="field-icon toggle-pw" aria-label="Show password" onclick="togglePasswordVisibility('regPass', this)">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
@@ -2310,7 +2404,7 @@
 
                         <div class="login-field" data-field="regPassConfirm">
                             <i class="fa-solid fa-lock field-icon" aria-hidden="true"></i>
-                            <input type="password" id="regPassConfirm" placeholder="Confirm Password" autocomplete="new-password" minlength="6" enterkeyhint="done" aria-label="Confirm password">
+                            <input type="password" id="regPassConfirm" name="confirm-password" placeholder="Confirm Password" autocomplete="new-password" minlength="6" enterkeyhint="done" aria-label="Confirm password">
                             <button type="button" class="field-icon toggle-pw" aria-label="Show password" onclick="togglePasswordVisibility('regPassConfirm', this)">
                                 <i class="fa-solid fa-eye"></i>
                             </button>
@@ -2319,11 +2413,11 @@
 
                         <div class="login-field" data-field="regRef">
                             <i class="fa-solid fa-ticket field-icon" aria-hidden="true"></i>
-                            <input type="text" id="regRef" placeholder="Invite Code (Optional)" autocomplete="off" inputmode="text" enterkeyhint="done" maxlength="20" aria-label="Invite code">
+                            <input type="text" id="regRef" name="referral" placeholder="Invite Code (Optional)" autocomplete="off" inputmode="text" enterkeyhint="done" maxlength="20" aria-label="Invite code">
                         </div>
                         <div class="field-error" data-error-for="regRef"></div>
 
-                        <button type="button" class="login-submit-btn" id="signupSubmitBtn" onclick="signup()" style="background: linear-gradient(135deg, #4a7c2c 0%, #1f3d0e 100%);">
+                        <button type="submit" class="login-submit-btn" id="signupSubmitBtn" style="background: linear-gradient(135deg, #4a7c2c 0%, #1f3d0e 100%);">
                             <span class="btn-spinner" aria-hidden="true"></span>
                             <span class="btn-label">SIGN UP</span>
                         </button>
@@ -2332,7 +2426,7 @@
                             <span>Already registered?</span>
                             <a class="register-link" onclick="toggleAuth('login')">Login here</a>
                         </div>
-                    </div>
+                    </form>
 
                     <div class="login-footer">
                         <span class="login-footer-icon"><i class="fa-solid fa-shield-halved"></i></span>
@@ -3506,6 +3600,7 @@
         function toggleAuth(mode) {
             const loginForm = document.getElementById('loginForm');
             const signupForm = document.getElementById('signupForm');
+            const authTitle = document.getElementById('authTitle');
             if(mode === 'signup') {
                 if (loginForm) loginForm.classList.add('is-switching');
                 setTimeout(() => {
@@ -3514,8 +3609,12 @@
                         signupForm.style.display = 'block';
                         signupForm.classList.add('is-switching');
                     }
-                    document.getElementById('authTitle').innerText = "Create Account";
-                    generateCaptcha();
+                    // Safe title update — element is optional, so the form
+                    // never gets stuck in the "is-switching" hidden state.
+                    if (authTitle) authTitle.innerText = "Create Account";
+                    if (typeof generateCaptcha === 'function') {
+                        try { generateCaptcha(); } catch (e) { /* noop */ }
+                    }
                     // Re-apply the URL referral code (if any) every time the user
                     // toggles to Sign Up, so it survives a Login ↔ Signup switch.
                     if (typeof __applyUrlReferralCode === 'function') {
@@ -3534,8 +3633,10 @@
                         loginForm.style.display = 'block';
                         loginForm.classList.add('is-switching');
                     }
-                    document.getElementById('authTitle').innerText = "Welcome Back";
-                    restoreRememberState();
+                    if (authTitle) authTitle.innerText = "Welcome Back";
+                    if (typeof restoreRememberState === 'function') {
+                        try { restoreRememberState(); } catch (e) { /* noop */ }
+                    }
                     requestAnimationFrame(() => {
                         if (loginForm) loginForm.classList.remove('is-switching');
                     });
