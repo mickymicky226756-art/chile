@@ -905,20 +905,18 @@
         #authModal { -webkit-text-size-adjust: 100%; }
         /* Smooth scroll when a focused field is brought into view */
         #authModal { scroll-behavior: smooth; scroll-padding-top: 24px; }
-        /* CRITICAL: ensure no horizontal overflow anywhere in the auth modal */
+        /* Box-sizing everywhere inside the auth modal — prevents width blowouts */
         #authModal, #authModal * { box-sizing: border-box; }
-        #authModal .modal-content { overflow: hidden; }
-        /* Hide the giant decorative avocado image on phones — it's noise */
-        @media (max-width: 900px) {
-            #authModal::before { display: none !important; }
+
+        /* The country-code selector — keep the chevron (matches the design),
+           keep the pointer cursor so it FEELS tappable, but it's a static label. */
+        .country-select {
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-        /* The country-code "button" used to LOOK tappable but did nothing.
-           Remove the cursor + chevron so users don't think it's interactive. */
-        .country-select { cursor: default; user-select: none; -webkit-tap-highlight-color: transparent; }
-        .country-select .country-chevron { display: none; }
+
         /* Make tap targets ≥ 44px for thumb-friendly mobile use — use padding,
-           NOT negative margin (negative margin was causing the eye button to
-           overflow the card on narrow screens). */
+           NOT negative margin (negative margin caused overflow on narrow screens). */
         .field-icon.toggle-pw {
             width: 44px; height: 44px;
             display: inline-flex; align-items: center; justify-content: center;
@@ -935,8 +933,7 @@
         }
         /* CRITICAL: prevent flex children from blowing out their container.
            Default `min-width: auto` lets inputs resist shrinking past their
-           intrinsic content size, which is the #1 cause of horizontal overflow
-           in forms. */
+           intrinsic content size, which is the #1 cause of horizontal overflow. */
         .login-field { min-width: 0; }
         .login-field input { min-width: 0; }
         /* Subtle transition when toggling between Login ↔ Signup */
@@ -979,57 +976,69 @@
         }
         .login-field.has-error { animation: fieldShake 0.35s ease; }
 
-        /* ===== RESPONSIVE — mobile-first overrides ===== */
-        /* These run on EVERY screen, but are scoped to mobile via @media
-           so desktop layout is untouched. */
+        /* ===== RESPONSIVE — keep the hero visible, just resize for mobile ===== */
         @media (max-width: 900px) {
+            /* Shrink the decorative avocado image so it doesn't dominate the screen */
+            #authModal::before {
+                width: 320px !important;
+                height: 320px !important;
+                top: -80px !important;
+                right: -100px !important;
+                opacity: 0.45 !important;
+            }
             #authModal::after {
-                background: linear-gradient(180deg, rgba(234,242,216,0.75) 0%, rgba(234,242,216,0.95) 60%);
+                background: linear-gradient(180deg, rgba(234,242,216,0.55) 0%, rgba(234,242,216,0.92) 70%) !important;
             }
-            /* Tighter padding on the modal so the form has room */
+            /* Modal: tighter padding so the form has room */
             #authModal .modal-content {
-                padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+                padding: 14px 18px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
             }
-            /* Stack the form below the (hidden) hero */
+            /* Stack hero above card, both centered */
             .login-body {
                 flex-direction: column !important;
-                align-items: stretch !important;
+                align-items: center !important;
                 justify-content: flex-start !important;
-                gap: 12px !important;
-                padding: 4px 0 12px !important;
+                gap: 16px !important;
+                padding: 10px 0 14px !important;
             }
-            /* Hide the marketing hero entirely on phones — save the screen for the form */
-            .login-hero { display: none !important; }
-            /* Form column: fill the screen, no centering weirdness */
-            .login-card-wrap {
-                width: 100% !important;
+            /* Hero: keep visible, just smaller */
+            .login-hero {
+                display: block !important;
+                text-align: center !important;
                 max-width: 100% !important;
                 min-width: 0 !important;
-                flex-shrink: 1 !important;
-                align-items: stretch !important;
             }
-            /* The card itself: full width, padded internally */
+            .hero-welcome { font-size: 1.1rem !important; margin-bottom: 2px !important; }
+            .hero-title { font-size: 2.6rem !important; margin-bottom: 10px !important; }
+            .hero-subtitle { font-size: 0.92rem !important; }
+
+            /* Card: fill the width nicely */
+            .login-card-wrap {
+                width: 100% !important;
+                max-width: 420px !important;
+                min-width: 0 !important;
+                flex-shrink: 1 !important;
+            }
             .login-card {
                 width: 100% !important;
                 max-width: 100% !important;
                 min-width: 0 !important;
-                padding: 22px 18px 20px !important;
-                border-radius: 20px !important;
-                overflow: hidden !important; /* belt-and-suspenders */
+                padding: 28px 24px 24px !important;
+                border-radius: 22px !important;
             }
-            .login-icon-circle { width: 52px; height: 52px; font-size: 1.1rem; margin-bottom: 14px; }
-            .login-card-title { font-size: 1.25rem; }
-            .login-card-subtitle { font-size: 0.85rem; margin-bottom: 18px; }
-            /* Fields: bigger padding, bigger font (prevents iOS auto-zoom),
-               forced to honor the card width via min-width: 0 */
+            .login-icon-circle { width: 54px; height: 54px; font-size: 1.15rem; margin-bottom: 14px; }
+            .login-card-title { font-size: 1.3rem; }
+            .login-card-subtitle { font-size: 0.88rem; margin-bottom: 22px; }
+
+            /* Fields: no overflow, bigger font (prevents iOS auto-zoom) */
             .login-field {
                 width: 100% !important;
                 max-width: 100% !important;
                 min-width: 0 !important;
-                padding: 10px 12px !important;
-                margin-bottom: 12px;
+                padding: 12px 14px !important;
+                margin-bottom: 14px;
                 border-radius: 14px;
-                gap: 8px;
+                gap: 10px;
             }
             .login-field input {
                 font-size: 16px !important;   /* ← critical: iOS won't zoom */
@@ -1037,32 +1046,24 @@
                 min-width: 0 !important;
                 max-width: 100% !important;
             }
-            /* Country code label: shrink-friendly, no chevron, keep flag+code */
-            .country-select {
-                flex-shrink: 0;
-                padding-right: 10px;
-                gap: 5px;
-                height: auto;
-            }
-            .country-code { font-size: 0.95rem; white-space: nowrap; }
-            .country-flag { font-size: 1.4rem; line-height: 1; }
-            /* Eye toggle: fixed size, no negative margin (caused overflow) */
-            .field-icon.toggle-pw {
-                flex-shrink: 0;
-                width: 40px; height: 40px;
-            }
+            .country-code { font-size: 0.95rem; }
+            .country-flag { font-size: 1.4rem; }
+            .field-icon.toggle-pw { width: 40px; height: 40px; }
+
             /* Larger touch-friendly submit button */
             .login-submit-btn { padding: 16px; font-size: 1rem; min-height: 54px; }
-            .register-divider-row { margin-top: 16px; font-size: 0.9rem; }
+            .register-divider-row { margin-top: 18px; font-size: 0.9rem; }
             .field-error { font-size: 0.78rem; margin: 4px 2px 0; }
         }
 
         /* Very small phones (≤ 360px width) — e.g. iPhone SE 1st gen */
         @media (max-width: 360px) {
-            #authModal .modal-content { padding: 8px 10px !important; }
-            .login-card { padding: 18px 14px 16px !important; border-radius: 18px !important; }
-            .login-card-title { font-size: 1.15rem; }
-            .login-field { padding: 9px 11px !important; gap: 6px; }
+            #authModal::before { width: 240px !important; height: 240px !important; top: -60px !important; right: -80px !important; }
+            #authModal .modal-content { padding: 10px 12px !important; }
+            .hero-title { font-size: 2.1rem !important; }
+            .login-card { padding: 22px 16px 20px !important; }
+            .login-card-title { font-size: 1.2rem; }
+            .login-field { padding: 10px 12px !important; gap: 8px; }
             .country-code { font-size: 0.9rem; }
             .field-icon.toggle-pw { width: 36px; height: 36px; }
         }
@@ -2247,6 +2248,7 @@
                             <div class="country-select" aria-hidden="true">
                                 <span class="country-flag">🇪🇹</span>
                                 <span class="country-code">+251</span>
+                                <i class="fa-solid fa-chevron-down country-chevron"></i>
                             </div>
                             <input type="tel" id="loginPhone" name="phone" placeholder="Phone Number" maxlength="9" autocomplete="username" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
                         </div>
@@ -2291,6 +2293,7 @@
                             <div class="country-select" aria-hidden="true">
                                 <span class="country-flag">🇪🇹</span>
                                 <span class="country-code">+251</span>
+                                <i class="fa-solid fa-chevron-down country-chevron"></i>
                             </div>
                             <input type="tel" id="regPhone" placeholder="Phone Number" maxlength="9" autocomplete="tel" inputmode="tel" enterkeyhint="next" pattern="[79][0-9]{8}" aria-label="Phone number">
                         </div>
@@ -3721,6 +3724,7 @@
 
         // Force the auth modal/form to fit narrow viewports. Uses inline
         // styles so it wins over any external CSS specificity issues.
+        // On mobile, KEEPS the hero and avocado image visible (per the design).
         function enforceAuthModalFit() {
             const isNarrow = window.innerWidth <= 900;
             if (!isNarrow) return;
@@ -3729,6 +3733,9 @@
             const content = modal ? modal.querySelector('.modal-content') : null;
             const body    = modal ? modal.querySelector('.login-body') : null;
             const hero    = modal ? modal.querySelector('.login-hero') : null;
+            const heroTitle = modal ? modal.querySelector('.hero-title') : null;
+            const heroWelcome = modal ? modal.querySelector('.hero-welcome') : null;
+            const heroSubtitle = modal ? modal.querySelector('.hero-subtitle') : null;
             const wrap    = modal ? modal.querySelector('.login-card-wrap') : null;
             const cards   = modal ? modal.querySelectorAll('.login-card') : [];
             const fields  = modal ? modal.querySelectorAll('.login-field') : [];
@@ -3736,33 +3743,43 @@
             const eyeBtns = modal ? modal.querySelectorAll('.field-icon.toggle-pw') : [];
 
             if (content) {
-                content.style.padding = '12px 14px calc(16px + env(safe-area-inset-bottom, 0px))';
+                content.style.padding = '14px 18px calc(18px + env(safe-area-inset-bottom, 0px))';
                 content.style.overflow = 'hidden';
                 content.style.maxWidth = '100%';
             }
             if (body) {
                 body.style.flexDirection = 'column';
-                body.style.alignItems = 'stretch';
+                body.style.alignItems = 'center';
                 body.style.justifyContent = 'flex-start';
-                body.style.gap = '12px';
-                body.style.padding = '4px 0 12px';
+                body.style.gap = '16px';
+                body.style.padding = '10px 0 14px';
             }
+            // KEEP the hero visible — just shrink the text
             if (hero) {
-                hero.style.display = 'none';
+                hero.style.display = 'block';
+                hero.style.textAlign = 'center';
+                hero.style.maxWidth = '100%';
+                hero.style.minWidth = '0';
             }
+            if (heroWelcome) heroWelcome.style.fontSize = '1.1rem';
+            if (heroTitle) {
+                heroTitle.style.fontSize = '2.6rem';
+                heroTitle.style.marginBottom = '10px';
+            }
+            if (heroSubtitle) heroSubtitle.style.fontSize = '0.92rem';
+
             if (wrap) {
                 wrap.style.width = '100%';
-                wrap.style.maxWidth = '100%';
+                wrap.style.maxWidth = '420px';
                 wrap.style.minWidth = '0';
                 wrap.style.flexShrink = '1';
-                wrap.style.alignItems = 'stretch';
             }
             cards.forEach(c => {
                 c.style.width = '100%';
                 c.style.maxWidth = '100%';
                 c.style.minWidth = '0';
-                c.style.padding = '22px 18px 20px';
-                c.style.borderRadius = '20px';
+                c.style.padding = '28px 24px 24px';
+                c.style.borderRadius = '22px';
                 c.style.overflow = 'hidden';
                 c.style.boxSizing = 'border-box';
             });
@@ -3770,8 +3787,8 @@
                 f.style.width = '100%';
                 f.style.maxWidth = '100%';
                 f.style.minWidth = '0';
-                f.style.padding = '10px 12px';
-                f.style.gap = '8px';
+                f.style.padding = '12px 14px';
+                f.style.gap = '10px';
                 f.style.boxSizing = 'border-box';
             });
             inputs.forEach(i => {
