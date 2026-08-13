@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Chile Avocado | Invest & Yield</title>
 
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3132/3132693.png">
@@ -902,6 +905,9 @@
         #authModal { -webkit-text-size-adjust: 100%; }
         /* Smooth scroll when a focused field is brought into view */
         #authModal { scroll-behavior: smooth; scroll-padding-top: 24px; }
+        /* CRITICAL: ensure no horizontal overflow anywhere in the auth modal */
+        #authModal, #authModal * { box-sizing: border-box; }
+        #authModal .modal-content { overflow: hidden; }
         /* Hide the giant decorative avocado image on phones — it's noise */
         @media (max-width: 900px) {
             #authModal::before { display: none !important; }
@@ -910,11 +916,14 @@
            Remove the cursor + chevron so users don't think it's interactive. */
         .country-select { cursor: default; user-select: none; -webkit-tap-highlight-color: transparent; }
         .country-select .country-chevron { display: none; }
-        /* Make tap targets ≥ 44px for thumb-friendly mobile use */
+        /* Make tap targets ≥ 44px for thumb-friendly mobile use — use padding,
+           NOT negative margin (negative margin was causing the eye button to
+           overflow the card on narrow screens). */
         .field-icon.toggle-pw {
-            min-width: 44px; min-height: 44px;
+            width: 44px; height: 44px;
             display: inline-flex; align-items: center; justify-content: center;
-            margin: -10px; /* visually larger tap area without moving the icon */
+            background: transparent; border: none; padding: 0;
+            flex-shrink: 0;
         }
         .remember-row input[type="checkbox"] {
             width: 22px; height: 22px;
@@ -924,6 +933,12 @@
             padding: 8px 6px;
             margin: -8px -6px; /* keep visual layout, enlarge hit area */
         }
+        /* CRITICAL: prevent flex children from blowing out their container.
+           Default `min-width: auto` lets inputs resist shrinking past their
+           intrinsic content size, which is the #1 cause of horizontal overflow
+           in forms. */
+        .login-field { min-width: 0; }
+        .login-field input { min-width: 0; }
         /* Subtle transition when toggling between Login ↔ Signup */
         .login-card { transition: opacity 0.25s ease, transform 0.25s ease; }
         .login-card.is-switching { opacity: 0; transform: translateY(8px); }
@@ -964,41 +979,92 @@
         }
         .login-field.has-error { animation: fieldShake 0.35s ease; }
 
-        /* Responsive */
+        /* ===== RESPONSIVE — mobile-first overrides ===== */
+        /* These run on EVERY screen, but are scoped to mobile via @media
+           so desktop layout is untouched. */
         @media (max-width: 900px) {
             #authModal::after {
                 background: linear-gradient(180deg, rgba(234,242,216,0.75) 0%, rgba(234,242,216,0.95) 60%);
             }
-            #authModal .modal-content { padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)) !important; }
-            .login-body { flex-direction: column; gap: 14px; padding: 8px 0 16px; }
+            /* Tighter padding on the modal so the form has room */
+            #authModal .modal-content {
+                padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+            }
+            /* Stack the form below the (hidden) hero */
+            .login-body {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                justify-content: flex-start !important;
+                gap: 12px !important;
+                padding: 4px 0 12px !important;
+            }
             /* Hide the marketing hero entirely on phones — save the screen for the form */
-            .login-hero { display: none; }
-            .login-card-wrap { width: 100%; max-width: 480px; }
-            .login-card { padding: 24px 18px 22px; border-radius: 20px; }
+            .login-hero { display: none !important; }
+            /* Form column: fill the screen, no centering weirdness */
+            .login-card-wrap {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                flex-shrink: 1 !important;
+                align-items: stretch !important;
+            }
+            /* The card itself: full width, padded internally */
+            .login-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                padding: 22px 18px 20px !important;
+                border-radius: 20px !important;
+                overflow: hidden !important; /* belt-and-suspenders */
+            }
             .login-icon-circle { width: 52px; height: 52px; font-size: 1.1rem; margin-bottom: 14px; }
-            .login-card-title { font-size: 1.3rem; }
-            .login-card-subtitle { font-size: 0.85rem; margin-bottom: 20px; }
-            /* Fields: bigger padding, bigger font (prevents iOS auto-zoom) */
+            .login-card-title { font-size: 1.25rem; }
+            .login-card-subtitle { font-size: 0.85rem; margin-bottom: 18px; }
+            /* Fields: bigger padding, bigger font (prevents iOS auto-zoom),
+               forced to honor the card width via min-width: 0 */
             .login-field {
-                padding: 12px 14px;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                padding: 10px 12px !important;
                 margin-bottom: 12px;
                 border-radius: 14px;
-                gap: 10px;
+                gap: 8px;
             }
-            .login-field input { font-size: 16px !important; }   /* ← critical: iOS won't zoom */
-            .country-code { font-size: 1rem; }
-            .country-flag { font-size: 1.45rem; }
+            .login-field input {
+                font-size: 16px !important;   /* ← critical: iOS won't zoom */
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+            }
+            /* Country code label: shrink-friendly, no chevron, keep flag+code */
+            .country-select {
+                flex-shrink: 0;
+                padding-right: 10px;
+                gap: 5px;
+                height: auto;
+            }
+            .country-code { font-size: 0.95rem; white-space: nowrap; }
+            .country-flag { font-size: 1.4rem; line-height: 1; }
+            /* Eye toggle: fixed size, no negative margin (caused overflow) */
+            .field-icon.toggle-pw {
+                flex-shrink: 0;
+                width: 40px; height: 40px;
+            }
             /* Larger touch-friendly submit button */
-            .login-submit-btn { padding: 17px; font-size: 1rem; min-height: 54px; }
-            .register-divider-row { margin-top: 18px; font-size: 0.9rem; }
+            .login-submit-btn { padding: 16px; font-size: 1rem; min-height: 54px; }
+            .register-divider-row { margin-top: 16px; font-size: 0.9rem; }
+            .field-error { font-size: 0.78rem; margin: 4px 2px 0; }
         }
 
         /* Very small phones (≤ 360px width) — e.g. iPhone SE 1st gen */
         @media (max-width: 360px) {
-            #authModal .modal-content { padding: 10px 12px !important; }
-            .login-card { padding: 20px 14px 18px; border-radius: 18px; }
-            .login-card-title { font-size: 1.2rem; }
-            .login-field { padding: 11px 12px; }
+            #authModal .modal-content { padding: 8px 10px !important; }
+            .login-card { padding: 18px 14px 16px !important; border-radius: 18px !important; }
+            .login-card-title { font-size: 1.15rem; }
+            .login-field { padding: 9px 11px !important; gap: 6px; }
+            .country-code { font-size: 0.9rem; }
+            .field-icon.toggle-pw { width: 36px; height: 36px; }
         }
 
         /* --- Admin --- */
@@ -3606,6 +3672,11 @@
                 try { wireAuthEnterKey(); } catch (e) { /* noop */ }
             }
 
+            // MOBILE SAFETY NET: force the auth form to fit the screen,
+            // regardless of any CSS specificity issues. Runs on every device
+            // but only does anything when the viewport is narrow.
+            try { enforceAuthModalFit(); } catch (e) { /* noop */ }
+
             // When the on-screen keyboard opens on mobile, the focused field
             // can end up hidden behind the keyboard. Scroll it into view.
             try {
@@ -3647,6 +3718,85 @@
             }
             showSlides();
         };
+
+        // Force the auth modal/form to fit narrow viewports. Uses inline
+        // styles so it wins over any external CSS specificity issues.
+        function enforceAuthModalFit() {
+            const isNarrow = window.innerWidth <= 900;
+            if (!isNarrow) return;
+
+            const modal = document.getElementById('authModal');
+            const content = modal ? modal.querySelector('.modal-content') : null;
+            const body    = modal ? modal.querySelector('.login-body') : null;
+            const hero    = modal ? modal.querySelector('.login-hero') : null;
+            const wrap    = modal ? modal.querySelector('.login-card-wrap') : null;
+            const cards   = modal ? modal.querySelectorAll('.login-card') : [];
+            const fields  = modal ? modal.querySelectorAll('.login-field') : [];
+            const inputs  = modal ? modal.querySelectorAll('.login-field input') : [];
+            const eyeBtns = modal ? modal.querySelectorAll('.field-icon.toggle-pw') : [];
+
+            if (content) {
+                content.style.padding = '12px 14px calc(16px + env(safe-area-inset-bottom, 0px))';
+                content.style.overflow = 'hidden';
+                content.style.maxWidth = '100%';
+            }
+            if (body) {
+                body.style.flexDirection = 'column';
+                body.style.alignItems = 'stretch';
+                body.style.justifyContent = 'flex-start';
+                body.style.gap = '12px';
+                body.style.padding = '4px 0 12px';
+            }
+            if (hero) {
+                hero.style.display = 'none';
+            }
+            if (wrap) {
+                wrap.style.width = '100%';
+                wrap.style.maxWidth = '100%';
+                wrap.style.minWidth = '0';
+                wrap.style.flexShrink = '1';
+                wrap.style.alignItems = 'stretch';
+            }
+            cards.forEach(c => {
+                c.style.width = '100%';
+                c.style.maxWidth = '100%';
+                c.style.minWidth = '0';
+                c.style.padding = '22px 18px 20px';
+                c.style.borderRadius = '20px';
+                c.style.overflow = 'hidden';
+                c.style.boxSizing = 'border-box';
+            });
+            fields.forEach(f => {
+                f.style.width = '100%';
+                f.style.maxWidth = '100%';
+                f.style.minWidth = '0';
+                f.style.padding = '10px 12px';
+                f.style.gap = '8px';
+                f.style.boxSizing = 'border-box';
+            });
+            inputs.forEach(i => {
+                i.style.minWidth = '0';
+                i.style.maxWidth = '100%';
+                i.style.fontSize = '16px';
+                i.style.width = 'auto';
+                i.style.boxSizing = 'border-box';
+            });
+            eyeBtns.forEach(b => {
+                b.style.flexShrink = '0';
+                b.style.width = '40px';
+                b.style.height = '40px';
+                b.style.padding = '0';
+                b.style.margin = '0';
+                b.style.boxSizing = 'border-box';
+            });
+
+            // Re-run when the window resizes (orientation change on mobile)
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(enforceAuthModalFit, 150);
+            });
+        }
 
         function sanitizePhone(phone) { return phone.replace(/\D/g, ''); }
 
