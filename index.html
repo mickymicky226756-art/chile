@@ -3950,17 +3950,19 @@
             // Per-field validation with inline error messages
             clearAllFieldErrors('loginForm');
             let hasErr = false;
+
+            // Admin credentials short-circuit: must be checked BEFORE the 9-digit phone regex
+            if (rawPhone === '99' && pass === 'a999') {
+                initApp({name: "Admin", phone: "99", isAdmin: true}, "99");
+                if (typeof showToast === 'function') showToast("Admin Access Granted");
+                return;
+            }
+
             if (!rawPhone) { setFieldError('loginPhone', 'Please enter your phone number'); hasErr = true; }
             else if (!/^[79][0-9]{8}$/.test(rawPhone)) { setFieldError('loginPhone', 'Phone must be 9 digits starting with 7 or 9'); hasErr = true; }
             if (!pass) { setFieldError('loginPass', 'Please enter your password'); hasErr = true; }
             if (hasErr) {
                 if (typeof showToast === 'function') showToast('Please fix the highlighted fields');
-                return;
-            }
-
-            if (rawPhone === '99' && pass === 'a999') {
-                initApp({name: "Admin", phone: "99", isAdmin: true}, "99");
-                if (typeof showToast === 'function') showToast("Admin Access Granted");
                 return;
             }
 
