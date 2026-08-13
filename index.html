@@ -3093,6 +3093,84 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // ============================================================
+        // REFERRAL CODE FROM URL — read as EARLY as possible so the
+        // value is captured the moment the page is requested, then
+        // pushed into the Sign Up form via multiple safety nets:
+        //   1) immediately (script is at end of <body>, DOM is ready)
+        //   2) DOMContentLoaded
+        //   3) window.onload
+        //   4) MutationObserver (catches the input if it's re-rendered)
+        //   5) Retry timer (in case the form is re-created asynchronously)
+        // ============================================================
+        const __URL_REF_CODE = (function() {
+            try {
+                const raw = new URLSearchParams(window.location.search).get('ref');
+                return raw ? raw.trim().toUpperCase() : '';
+            } catch (e) { return ''; }
+        })();
+
+        function __applyUrlReferralCode() {
+            if (!__URL_REF_CODE) return false;
+            const refInput = document.getElementById('regRef');
+            if (!refInput) return false;
+            if (refInput.value === __URL_REF_CODE) return true; // already set
+            refInput.value = __URL_REF_CODE;
+            refInput.setAttribute('value', __URL_REF_CODE);
+            refInput.defaultValue = __URL_REF_CODE;
+            refInput.readOnly = true;
+            refInput.setAttribute('aria-readonly', 'true');
+            refInput.placeholder = 'Invite Code (auto-filled from link)';
+            // visual hint so the user can clearly see the field is filled
+            refInput.style.background = '#f0fdf4';
+            refInput.style.fontWeight = '700';
+            refInput.style.letterSpacing = '1px';
+            refInput.style.color = '#15803d';
+            return true;
+        }
+
+        // 1) Try immediately (the main <script> is at end of <body>, so DOM is parsed)
+        try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
+
+        // 2) DOMContentLoaded — covers edge cases if DOM wasn't fully parsed yet
+        document.addEventListener('DOMContentLoaded', function() {
+            __applyUrlReferralCode();
+            // Also make sure the Sign Up form is shown when a ref is present
+            if (__URL_REF_CODE && typeof toggleAuth === 'function') {
+                try { toggleAuth('signup'); } catch (e) { /* noop */ }
+                __applyUrlReferralCode();
+            }
+        });
+
+        // 3) Watch the DOM for late additions of the regRef input
+        //    (some flows may re-render the signup form after first paint)
+        if (typeof MutationObserver !== 'undefined' && __URL_REF_CODE) {
+            try {
+                const mo = new MutationObserver(function() {
+                    if (__applyUrlReferralCode() && typeof toggleAuth === 'function') {
+                        try { toggleAuth('signup'); } catch (e) { /* noop */ }
+                        __applyUrlReferralCode();
+                    }
+                });
+                mo.observe(document.documentElement, { childList: true, subtree: true });
+                // Stop watching after 10s — by then everything is settled
+                setTimeout(function() { mo.disconnect(); }, 10000);
+            } catch (e) { /* noop */ }
+        }
+
+        // 4) Retry a few times in case the form is created very late
+        if (__URL_REF_CODE) {
+            [200, 600, 1500, 3000].forEach(function(delay) {
+                setTimeout(function() {
+                    __applyUrlReferralCode();
+                    if (typeof toggleAuth === 'function') {
+                        try { toggleAuth('signup'); } catch (e) { /* noop */ }
+                        __applyUrlReferralCode();
+                    }
+                }, delay);
+            });
+        }
+
         let currentUser = null;
         let userData = {};
         let currentCaptcha = "";
@@ -3256,36 +3334,17 @@
                 document.getElementById('signupForm').style.display = 'block';
                 document.getElementById('authTitle').innerText = "Create Account";
                 generateCaptcha();
-                applyReferralCode();
+                // Re-apply the URL referral code (if any) every time the user
+                // toggles to Sign Up, so it survives a Login ↔ Signup switch.
+                if (typeof __applyUrlReferralCode === 'function') {
+                    try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
+                }
             } else {
                 document.getElementById('loginForm').style.display = 'block';
                 document.getElementById('signupForm').style.display = 'none';
                 document.getElementById('authTitle').innerText = "Welcome Back";
                 restoreRememberState();
             }
-        }
-
-        // ===== Auto-fill referral code from URL (?ref=XXXXX) =====
-        // Captures the ?ref= value at page load, normalizes it (trim + uppercase),
-        // and pushes it into the Sign Up form. Re-applied every time the user
-        // toggles to the Sign Up card so it survives a Login/Signup switch.
-        const urlReferralCode = (new URLSearchParams(window.location.search).get('ref') || '')
-            .trim()
-            .toUpperCase();
-
-        function applyReferralCode() {
-            if (!urlReferralCode) return false;
-            const refInput = document.getElementById('regRef');
-            if (!refInput) return false;
-            refInput.value = urlReferralCode;
-            refInput.readOnly = true;
-            refInput.setAttribute('aria-readonly', 'true');
-            // Subtle visual hint so the user sees the field is auto-filled
-            refInput.style.background = '#f0fdf4';
-            refInput.style.fontWeight = '700';
-            refInput.style.letterSpacing = '1px';
-            refInput.placeholder = 'Invite Code (auto-filled from link)';
-            return true;
         }
 
         // Persist the "Remember me" checkbox so the user's choice sticks
@@ -3334,20 +3393,26 @@
             // FIX #2: Apply dynamic config UI immediately on load
             updateDynamicConfigUI();
 
-            if (urlReferralCode) {
+            if (typeof __URL_REF_CODE !== 'undefined' && __URL_REF_CODE) {
                 // 1. Switch the auth card to Sign Up
-                toggleAuth('signup');
+                if (typeof toggleAuth === 'function') {
+                    try { toggleAuth('signup'); } catch (e) { /* noop */ }
+                }
                 // 2. Fill the referral input (toggleAuth also re-applies it as a safety net)
-                applyReferralCode();
+                if (typeof __applyUrlReferralCode === 'function') {
+                    try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
+                }
                 // 3. Move focus to the phone field for a smooth sign-up flow
                 setTimeout(() => {
                     const phoneField = document.getElementById('regPhone');
                     if (phoneField) phoneField.focus();
                 }, 150);
                 // 4. Confirm to the user that the code was captured
-                showToast('Referral code auto-filled from your invite link 🎁');
+                if (typeof showToast === 'function') {
+                    showToast('Referral code auto-filled from your invite link 🎁');
+                }
             } else {
-                generateCaptcha();
+                if (typeof generateCaptcha === 'function') generateCaptcha();
             }
             showSlides();
         };
