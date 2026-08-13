@@ -4833,14 +4833,21 @@
             
             db.ref('users/' + currentUser).update({ balance: newBal, plans: newPlans, spins: newSpins }).then(() => {
                 showToast("Package Purchased! You earned 1 Spin!");
-                if(userData.referredBy && userData.referredBy !== 'admin') {
-                    distributeCommissions(userData.referredBy, cost, isFirst);
+                // Referral commission is paid ONLY on the user's first investment.
+                // Re-purchasing the same plan (or buying additional plans) must NOT
+                // trigger any L1 / L2 / L3 commission payouts.
+                if (isFirst && userData.referredBy && userData.referredBy !== 'admin') {
+                    distributeCommissions(userData.referredBy, cost, true);
                 }
                 updateUI(); loadShopPlans();
             });
         }
 
         function distributeCommissions(refCode, amount, isFirst) {
+            // Hard rule: commission is paid ONLY on the referred user's first
+            // investment. Any call with isFirst === false is a no-op.
+            if (!isFirst) return;
+
             // Pull the latest rates from appConfig (admin-controlled).
             // appConfig.commissionL1/L2/L3 are stored as percentages (e.g. 20 = 20%).
             const l1Rate = (Number(appConfig.commissionL1) || 0) / 100;
