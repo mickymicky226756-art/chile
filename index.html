@@ -959,6 +959,13 @@
             text-decoration: none; cursor: pointer;
             transition: all 0.2s;
             position: relative;
+            -webkit-tap-highlight-color: rgba(74, 124, 44, 0.18);
+            display: inline-block;
+            padding: 6px 8px;
+            margin: -6px -8px;
+            border-radius: 10px;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .register-link::after {
             content: '';
@@ -971,6 +978,20 @@
         }
         .register-link:hover { color: #1f3d0e; }
         .register-link:hover::after { width: 100%; }
+        /* Active / tap feedback — gives immediate visual acknowledgment
+           on touch devices where :hover doesn't apply. */
+        .register-link:active {
+            color: #1f3d0e;
+            background: rgba(74, 124, 44, 0.12);
+            transform: scale(0.96);
+            transition: transform 0.08s ease, background 0.08s ease, color 0.08s ease;
+        }
+        .register-link:active::after { width: 100%; transition: width 0.08s ease; }
+        .register-link:focus { outline: none; }
+        .register-link:focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
 
         /* Footer (Secure & Encrypted) */
         .login-footer {
@@ -1019,11 +1040,9 @@
         .remember-row input[type="checkbox"] {
             width: 22px; height: 22px;
         }
-        .register-link {
-            display: inline-block;
-            padding: 8px 6px;
-            margin: -8px -6px; /* keep visual layout, enlarge hit area */
-        }
+        /* .register-link hit-area enlargement already defined in the
+           main rule above (the "MOBILE-FIRST TWEAKS" block adds the
+           active state on top of it). */
         /* CRITICAL: prevent flex children from blowing out their container.
            Default `min-width: auto` lets inputs resist shrinking past their
            intrinsic content size, which is the #1 cause of horizontal overflow. */
@@ -3598,45 +3617,65 @@
             const loginForm = document.getElementById('loginForm');
             const signupForm = document.getElementById('signupForm');
             const authTitle = document.getElementById('authTitle');
-            if(mode === 'signup') {
-                if (loginForm) loginForm.classList.add('is-switching');
+
+            // Defensive: if the function is called with no DOM ready
+            // (e.g. inline onclick fires before parsing finishes), bail out
+            // gracefully instead of throwing.
+            if (!loginForm || !signupForm) return;
+
+            const switchTo = (form) => {
+                if (form) {
+                    form.style.display = 'block';
+                    // Force a reflow so the opacity transition starts
+                    // from a clean state (otherwise the browser may
+                    // batch the class change with the display change
+                    // and skip the transition entirely).
+                    void form.offsetWidth;
+                    form.classList.add('is-switching');
+                }
+            };
+            const revealForm = (form) => {
+                if (!form) return;
+                // Use rAF to remove the switching class on the next
+                // paint, which triggers the opacity 0 -> 1 transition.
+                requestAnimationFrame(() => {
+                    form.classList.remove('is-switching');
+                });
+                // Safety net: if requestAnimationFrame is delayed (e.g.
+                // background tab, slow device), make sure the form is
+                // always revealed within 300ms no matter what.
                 setTimeout(() => {
-                    if (loginForm) loginForm.style.display = 'none';
-                    if (signupForm) {
-                        signupForm.style.display = 'block';
-                        signupForm.classList.add('is-switching');
-                    }
-                    // Safe title update — element is optional, so the form
-                    // never gets stuck in the "is-switching" hidden state.
+                    if (form) form.classList.remove('is-switching');
+                }, 300);
+            };
+
+            if (mode === 'signup') {
+                loginForm.classList.add('is-switching');
+                setTimeout(() => {
+                    loginForm.style.display = 'none';
+                    switchTo(signupForm);
                     if (authTitle) authTitle.innerText = "Create Account";
                     if (typeof generateCaptcha === 'function') {
                         try { generateCaptcha(); } catch (e) { /* noop */ }
                     }
-                    // Re-apply the URL referral code (if any) every time the user
-                    // toggles to Sign Up, so it survives a Login ↔ Signup switch.
+                    // Re-apply the URL referral code (if any) every time
+                    // the user toggles to Sign Up, so it survives a
+                    // Login ↔ Signup switch.
                     if (typeof __applyUrlReferralCode === 'function') {
                         try { __applyUrlReferralCode(); } catch (e) { /* noop */ }
                     }
-                    // Trigger transition
-                    requestAnimationFrame(() => {
-                        if (signupForm) signupForm.classList.remove('is-switching');
-                    });
+                    revealForm(signupForm);
                 }, 120);
             } else {
-                if (signupForm) signupForm.classList.add('is-switching');
+                signupForm.classList.add('is-switching');
                 setTimeout(() => {
-                    if (signupForm) signupForm.style.display = 'none';
-                    if (loginForm) {
-                        loginForm.style.display = 'block';
-                        loginForm.classList.add('is-switching');
-                    }
+                    signupForm.style.display = 'none';
+                    switchTo(loginForm);
                     if (authTitle) authTitle.innerText = "Welcome Back";
                     if (typeof restoreRememberState === 'function') {
                         try { restoreRememberState(); } catch (e) { /* noop */ }
                     }
-                    requestAnimationFrame(() => {
-                        if (loginForm) loginForm.classList.remove('is-switching');
-                    });
+                    revealForm(loginForm);
                 }, 120);
             }
         }
