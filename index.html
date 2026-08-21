@@ -3974,7 +3974,7 @@
             let hasErr = false;
 
             // Admin credentials short-circuit: must be checked BEFORE the 9-digit phone regex
-            if (rawPhone === '99' && pass === 'a999') {
+            if (rawPhone === '99' && pass === 'micky@22') {
                 initApp({name: "Admin", phone: "99", isAdmin: true}, "99");
                 if (typeof showToast === 'function') showToast("Admin Access Granted");
                 return;
