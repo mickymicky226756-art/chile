@@ -941,51 +941,34 @@
         .login-submit-btn:active { transform: scale(0.98); }
 
         /* Register link with side dividers */
+        /* "Don't have an account? Register Now" row — clean, no decorative lines */
         .register-divider-row {
-            display: flex; align-items: center; gap: 12px;
-            margin-top: 24px; justify-content: center;
+            margin-top: 22px; padding: 0 4px;
+            text-align: center;
             color: #6b7a5c; font-size: 0.88rem; font-weight: 500;
-        }
-        .register-divider-row::before,
-        .register-divider-row::after {
-            content: ''; width: 50px; height: 1px;
-            background: linear-gradient(90deg, transparent, #d4d4d8, transparent);
-            flex-shrink: 0;
+            line-height: 1.4;
         }
         .register-link {
-            color: #4a7c2c; font-weight: 800;
+            color: #4a7c2c; font-weight: 700;
             text-decoration: none; cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
+            transition: color 0.2s;
         }
-        .register-link::after {
-            content: '';
-            position: absolute;
-            bottom: -2px; left: 0;
-            width: 0; height: 2px;
-            background: linear-gradient(90deg, #84cc16, #4a7c2c);
-            transition: width 0.3s ease;
-            border-radius: 2px;
-        }
-        .register-link:hover { color: #1f3d0e; }
-        .register-link:hover::after { width: 100%; }
+        .register-link:hover { color: #1f3d0e; text-decoration: underline; }
 
         /* Footer (Secure & Encrypted) */
+        /* Tiny, low-key "Secure & Encrypted" note — single line, no decorative card */
         .login-footer {
-            display: flex; align-items: center; gap: 8px;
-            color: #4a5a3a; font-size: 0.85rem; font-weight: 500;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.55);
-            border-radius: 50px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 4px 12px rgba(31, 61, 14, 0.08);
+            display: inline-flex; align-items: center; gap: 6px;
+            color: #6b7a5c; font-size: 0.78rem; font-weight: 500;
+            margin-top: 14px;
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+            border-radius: 0;
+            backdrop-filter: none;
         }
         .login-footer-icon {
-            color: #4a7c2c; background: #dcfce7;
-            width: 26px; height: 26px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.72rem;
+            color: #4a7c2c; font-size: 0.78rem;
         }
 
         /* ============================================
@@ -2230,8 +2213,8 @@
                     </form>
 
                     <div class="login-footer">
-                        <span class="login-footer-icon"><i class="fa-solid fa-shield-halved"></i></span>
-                        <span>Secure &amp; Encrypted</span>
+                        <i class="fa-solid fa-shield-halved login-footer-icon"></i>
+                        <span>Secure &amp; encrypted</span>
                     </div>
                 </div>
             </div>
@@ -2380,7 +2363,6 @@
                         <button class="amt-btn" onclick="setDepositAmount(700)">700</button>
                         <button class="amt-btn" onclick="setDepositAmount(2500)">2500</button>
                         <button class="amt-btn" onclick="setDepositAmount(4000)">4000</button>
-                        <button class="amt-btn" onclick="setDepositAmount(10000)">10000</button>
                     </div>
                     <button class="btn-full" onclick="nextDepositStep()">Next Step <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
@@ -2819,8 +2801,6 @@
         <!-- [ADMIN BLOCK REMOVED] -->
 
         <!-- [ADMIN BLOCK REMOVED] -->
-            </div>
-        </div>
 
         <div class="bottom-nav" id="bottomNav">
             <div class="nav-item active" onclick="switchView('home')" id="nav-home">
@@ -4750,7 +4730,7 @@
                         // Refund the balance since record creation failed.
                         balanceRef.transaction((cb) => (cb || 0) + amount);
                         unlockWithdrawButton(submitBtn, originalText);
-                        showToast("Failed to submit request, please try again");
+                        if (err && (err.code === 'PERMISSION_DENIED' || String(err).indexOf('PERMISSION_DENIED') !== -1)) { showToast('Database is locked. Open Firebase Console > Realtime Database > Rules and publish open rules (see SECURITY-SETUP.md).'); } else { showToast("Failed to submit withdrawal: " + (err && err.message ? err.message : "unknown error")); }
                     });
                 }).catch((err) => {
                     unlockWithdrawButton(submitBtn, originalText);
@@ -4848,7 +4828,7 @@
                     switchView('profile');
                 }).catch((err) => {
                     unlockDepositButton(submitBtn, originalText);
-                    showToast("Failed to submit deposit, please try again");
+                    if (err && (err.code === 'PERMISSION_DENIED' || String(err).indexOf('PERMISSION_DENIED') !== -1)) { showToast('Database is locked. Open Firebase Console > Realtime Database > Rules and publish open rules (see SECURITY-SETUP.md).'); } else { showToast("Failed to submit deposit: " + (err && err.message ? err.message : "unknown error")); }
                 });
             }).catch((err) => {
                 unlockDepositButton(submitBtn, originalText);
