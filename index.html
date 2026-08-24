@@ -2095,6 +2095,13 @@
         }
     
     </style>
+    <!-- Firebase config lives in its own file so the database URL/key
+         isn't a giant block of plain text in the page source. The config
+         is still technically reachable in the browser (any Firebase web
+         app is), but having it in a separate file keeps the HTML clean
+         and makes it easier to swap configs between environments
+         (staging/production) without rebuilding the app. -->
+    <script src="firebase-config.js"></script>
 </head>
 <body>
 
@@ -2902,19 +2909,57 @@
     <div id="toast">Notification</div>
 
     <script>
-        // --- SHARED FIREBASE CONFIG (same as admin site) ---
-        const firebaseConfig = {
-          apiKey: "AIzaSyBBzMatSnWiR9uzVBZRaG8bVUQi2aGXx3c",
-          authDomain: "chile-b8f92.firebaseapp.com",
-          databaseURL: "https://chile-b8f92-default-rtdb.firebaseio.com",
-          projectId: "chile-b8f92",
-          storageBucket: "chile-b8f92.firebasestorage.app",
-          messagingSenderId: "948015697889",
-          appId: "1:948015697889:web:c32cba26dccfe3101b4ca0",
-          measurementId: "G-4VYYZR86Z4"
-        };
-        firebase.initializeApp(firebaseConfig);
+        // --- Firebase config is loaded from firebase-config.js ---
+        // (loaded via <script src="firebase-config.js"> in <head>)
+        if (typeof window.FIREBASE_CONFIG === 'undefined') {
+            console.error('firebase-config.js failed to load. Make sure it is in the same directory as index.html.');
+        } else {
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+        }
         const db = firebase.database();
+
+
+        // ============================================================
+        // USER WRITE STAMPING
+        //   The Database Rules require every write to /users/{phone} to
+        //   include a userToken (the user's own phone) so the rules can
+        //   tell legitimate user writes from random writes by anyone with
+        //   the public API key. We wrap the realtime reference once so
+        //   every set() / update() on the user site stamps userToken
+        //   automatically.
+        // ============================================================
+        (function stampUserWrites() {
+            const _origSet = firebase.database.Reference.prototype.set;
+            const _origUpdate = firebase.database.Reference.prototype.update;
+            const _origTransaction = firebase.database.Reference.prototype.transaction;
+            const _origPush = firebase.database.Query.prototype.push;
+            const _origRemove = firebase.database.Reference.prototype.remove;
+
+            function shouldStamp(ref) {
+                // Only stamp writes that target /users/{phone} or its children
+                const p = ref.toString();
+                return p.indexOf('/users/') === 0 || p.indexOf('https://') === 0 && p.indexOf('/users/') !== -1;
+            }
+
+            firebase.database.Reference.prototype.set = function(value) {
+                if (shouldStamp(this) && typeof value === 'object' && value !== null) {
+                    value = Object.assign({}, value, { userToken: (currentUser || value.phone || '') });
+                }
+                return _origSet.call(this, value);
+            };
+
+            firebase.database.Reference.prototype.update = function(value) {
+                if (shouldStamp(this) && typeof value === 'object' && value !== null) {
+                    value = Object.assign({}, value, { userToken: (currentUser || '') });
+                }
+                return _origUpdate.call(this, value);
+            };
+
+            firebase.database.Reference.prototype.remove = function() {
+                // remove() doesn't need a token (rules fire on .write)
+                return _origRemove.call(this);
+            };
+        })();
 
 
 
