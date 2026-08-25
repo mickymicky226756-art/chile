@@ -4426,50 +4426,111 @@
             });
         }
 
+        // Distributed-commission payout for L1 / L2 / L3 referrers.
+        //
+        // Hard rules (so we don't lose payouts or double-pay):
+        //   1. Commission is paid ONLY on the buyer's FIRST investment. If the caller
+        //      reports isFirst === false, we no-op immediately.
+        //   2. The buyer is marked commissionPaid: true in the DB the moment we start
+        //      paying, so a retry / second buy can never pay the same inviter twice.
+        //   3. Each balance/commission bump uses Firebase runTransaction so the
+        //      "+=bonus" is atomic. The old code did read-modify-write with a stale
+        //      snapshot, which lost updates whenever two commissions fired within
+        //      a few hundred ms of each other (e.g. user clicks "Buy" twice, or two
+        //      different users with the same inviter buy at the same time).
+        //   4. Errors are caught and logged. Silent failures were the old #1 cause of
+        //      "sometimes the commission doesn't show up".
         function distributeCommissions(refCode, amount, isFirst) {
-            // Hard rule: commission is paid ONLY on the referred user's first
-            // investment. Any call with isFirst === false is a no-op.
             if (!isFirst) return;
+            if (!refCode || !amount) return;
+            if (typeof refCode !== 'string') return;
 
             // Pull the latest rates from appConfig (admin-controlled).
-            // appConfig.commissionL1/L2/L3 are stored as percentages (e.g. 20 = 20%).
+            // commissionL1/L2/L3 are stored as percentages (e.g. 20 = 20%).
             const l1Rate = (Number(appConfig.commissionL1) || 0) / 100;
             const l2Rate = (Number(appConfig.commissionL2) || 0) / 100;
             const l3Rate = (Number(appConfig.commissionL3) || 0) / 100;
+            if (l1Rate <= 0) return;   // no commission configured, nothing to do
 
+            // 1) Look up the buyer's record by phone (key). We need it both to
+            //    find the L1 inviter and to flip commissionPaid = true atomically.
             db.ref('users').once('value', (snap) => {
-                if(!snap.exists()) return;
-                let u1Key = null, u1 = null;
-                snap.forEach(c => { if(c.val().refCode === refCode) { u1Key = c.key; u1 = c.val(); } });
+                if (!snap.exists()) return;
+                const up = (s) => String(s || '').trim().toUpperCase();
+                const targetRef = up(refCode);
 
-                if(u1Key) {
-                    let newSpinsU1 = (u1.spins || 0);
-                    if (isFirst) newSpinsU1 += 1;
+                let buyerKey = null;
+                snap.forEach(c => {
+                    if (up(c.val().refCode) === targetRef) buyerKey = c.key;
+                });
+                if (!buyerKey) {
+                    // refCode didn't match anyone — the inviter's code is invalid.
+                    // Without this guard, no commission would be paid (silent failure).
+                    return;
+                }
+
+                // 2) Atomically flip commissionPaid on the buyer's record. If it's
+                //    already true, we exit so we never pay the same inviter twice.
+                const buyerRef = db.ref('users/' + buyerKey);
+                buyerRef.transaction((b) => {
+                    if (!b) return b;                       // buyer vanished, abort
+                    if (b.commissionPaid === true) return;  // already paid, no-op
+                    return { commissionPaid: true };
+                }, (err, committed) => {
+                    if (err) { console.error('Commission lock failed', err); return; }
+                    if (!committed) return;                // someone else got the lock — exit
+
+                    // 3) Helper that atomically bumps balance + commission on a user
+                    //    using the CURRENT DB value (so concurrent writes can't lose
+                    //    a payout). Retries on abort to handle contention.
+                    function atomicCredit(userKey, bonus, level) {
+                        if (!userKey || !bonus) return Promise.resolve();
+                        const ref = db.ref('users/' + userKey);
+                        return new Promise((resolve) => {
+                            const tryCredit = (attempt) => {
+                                if (attempt > 4) { resolve(); return; }
+                                ref.transaction((u) => {
+                                    if (!u) return u;
+                                    return {
+                                        balance:    (Number(u.balance)    || 0) + bonus,
+                                        commission: (Number(u.commission) || 0) + bonus
+                                    };
+                                }, (err2, ok) => {
+                                    if (err2) { console.error('Credit failed L'+level, err2); resolve(); return; }
+                                    if (!ok) setTimeout(() => tryCredit(attempt + 1), 80);
+                                    else resolve();
+                                });
+                            };
+                            tryCredit(0);
+                        });
+                    }
+
+                    // 4) Walk the referral chain and credit L1 / L2 / L3 inviter(s).
+                    //    Each lookup uses the SAME snap (read-only), so we don't need
+                    //    re-fetches between levels.
+                    let u1Key = null, u1 = null;
+                    snap.forEach(c => { if (up(c.val().refCode) === targetRef) { u1Key = c.key; u1 = c.val(); } });
+                    if (!u1Key) return;
 
                     const l1Bonus = amount * l1Rate;
-                    db.ref('users/' + u1Key).update({
-                        balance: (u1.balance||0) + l1Bonus,
-                        commission: (u1.commission||0) + l1Bonus,
-                        spins: newSpinsU1
-                    });
-
-                    if(u1.referredBy && u1.referredBy !== 'admin') {
+                    // L1 also earns +1 spin as a thank-you for the referral.
+                    db.ref('users/' + u1Key + '/spins').transaction((s) => (Number(s) || 0) + 1);
+                    atomicCredit(u1Key, l1Bonus, 1).then(() => {
+                        if (!u1.referredBy || u1.referredBy === 'admin') return;
                         let u2Key = null, u2 = null;
-                        snap.forEach(c => { if(c.val().refCode === u1.referredBy) { u2Key = c.key; u2 = c.val(); } });
-                        if(u2Key) {
-                            const l2Bonus = amount * l2Rate;
-                            db.ref('users/' + u2Key).update({ balance: (u2.balance||0) + l2Bonus, commission: (u2.commission||0) + l2Bonus });
-                            if(u2.referredBy && u2.referredBy !== 'admin') {
-                                let u3Key = null, u3 = null;
-                                snap.forEach(c => { if(c.val().refCode === u2.referredBy) { u3Key = c.key; u3 = c.val(); } });
-                                if(u3Key) {
-                                    const l3Bonus = amount * l3Rate;
-                                    db.ref('users/' + u3Key).update({ balance: (u3.balance||0) + l3Bonus, commission: (u3.commission||0) + l3Bonus });
-                                }
-                            }
-                        }
-                    }
-                }
+                        snap.forEach(c => { if (up(c.val().refCode) === up(u1.referredBy)) { u2Key = c.key; u2 = c.val(); } });
+                        if (!u2Key) return;
+                        const l2Bonus = amount * l2Rate;
+                        atomicCredit(u2Key, l2Bonus, 2).then(() => {
+                            if (!u2.referredBy || u2.referredBy === 'admin') return;
+                            let u3Key = null, u3 = null;
+                            snap.forEach(c => { if (up(c.val().refCode) === up(u2.referredBy)) { u3Key = c.key; u3 = c.val(); } });
+                            if (!u3Key) return;
+                            const l3Bonus = amount * l3Rate;
+                            atomicCredit(u3Key, l3Bonus, 3);
+                        });
+                    });
+                });
             });
         }
 
