@@ -3550,8 +3550,12 @@
         }
 
         function login() {
-            const rawPhone = document.getElementById('loginPhone').value;
-            const pass = document.getElementById('loginPass').value;
+            // CRITICAL: trim whitespace from both fields. Mobile keyboards, auto-fill,
+            // and copy-paste routinely insert a leading/trailing space that the user
+            // can't see (password is type=password, phone shows without spaces). Without
+            // this, " correct password " never matches "correct password" in the DB.
+            const rawPhone = (document.getElementById('loginPhone').value || '').trim();
+            const pass = (document.getElementById('loginPass').value || '').trim();
             const loginBtn = document.getElementById('loginSubmitBtn');
 
             // Per-field validation with inline error messages
@@ -3569,27 +3573,39 @@
 
             setSubmitLoading(loginBtn, true);
             const phone = "251" + sanitizePhone(rawPhone);
-            db.ref('users/' + phone).once('value', (snapshot) => {
-                setSubmitLoading(loginBtn, false);
-                const data = snapshot.val();
-                if (data && data.password === pass) {
-                    initApp(data, phone);
-                } else {
-                    setFieldError('loginPhone', '');
-                    setFieldError('loginPass', 'Phone or password is incorrect');
-                    if (typeof showToast === 'function') showToast("Invalid credentials");
-                }
-            }).catch(err => {
-                setSubmitLoading(loginBtn, false);
-                if (typeof showToast === 'function') showToast("Network error. Please try again.");
-            });
+            // One retry on transient Firebase errors (e.g. mobile network blip) so users
+            // don't see "incorrect password" when it's really a network failure.
+            const tryLogin = (attempt) => {
+                db.ref('users/' + phone).once('value', (snapshot) => {
+                    setSubmitLoading(loginBtn, false);
+                    const data = snapshot.val();
+                    if (data && data.password === pass) {
+                        initApp(data, phone);
+                    } else if (!snapshot.exists() && attempt === 0) {
+                        // Empty read on first try → network blip, retry once
+                        setSubmitLoading(loginBtn, true);
+                        setTimeout(() => tryLogin(1), 400);
+                    } else {
+                        setFieldError('loginPhone', '');
+                        setFieldError('loginPass', 'Phone or password is incorrect');
+                        if (typeof showToast === 'function') showToast("Invalid credentials");
+                    }
+                }).catch(err => {
+                    setSubmitLoading(loginBtn, false);
+                    if (typeof showToast === 'function') showToast("Network error. Please try again.");
+                });
+            };
+            tryLogin(0);
         }
 
         function signup() {
-            const rawPhone = document.getElementById('regPhone').value;
-            const pass = document.getElementById('regPass').value;
-            const passConfirm = document.getElementById('regPassConfirm').value;
-            const refCode = document.getElementById('regRef').value.trim().toUpperCase();
+            // Trim whitespace consistently — passwords are stored clean so the login
+            // (which also trims) always matches. Without this, a user who pastes a
+            // password with a trailing space signs up fine but can never log back in.
+            const rawPhone = (document.getElementById('regPhone').value || '').trim();
+            const pass = (document.getElementById('regPass').value || '').trim();
+            const passConfirm = (document.getElementById('regPassConfirm').value || '').trim();
+            const refCode = (document.getElementById('regRef').value || '').trim().toUpperCase();
             const signupBtn = document.getElementById('signupSubmitBtn');
 
             // Per-field validation with inline error messages
